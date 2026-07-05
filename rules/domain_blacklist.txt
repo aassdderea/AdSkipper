@@ -1,0 +1,299 @@
+# AdSkipper 广告域名黑名单
+# 格式: 每行一个域名，支持 * 通配符
+# 修改后10秒内自动热重载生效
+
+# ====== 穿山甲 Pangle / 字节跳动 ======
+pangolin-sdk-toutiao.com
+pangolin-sdk-toutiao1.com
+pangle.io
+pangle-b.com
+pangolin-sdk-toutiao-b.com
+pangolin-sdk-toutiao.com.edgesuite.net
+pglstatp-toutiao.com
+pangolin16-drcn.dtive.com
+pangolin.snssdk.com
+pangolin-ad.toutiaoapi.com
+pangle-ad.com
+pangleitop.com
+*.pangle.io
+*.pangolin-sdk-toutiao.com
+*.pglstatp-toutiao.com
+
+# ====== 优量汇 GDT / 腾讯广告 ======
+qzs.gdtimg.com
+qzs.qq.com
+mi.gdt.qq.com
+v.gdt.qq.com
+c.gdt.qq.com
+splash.gdtimg.com
+ttc.gdt.qq.com
+tangram.gdtimg.com
+wximg.qq.com
+wa.gdt.qq.com
+gdt.qq.com
+l.gdt.qq.com
+pingfore.qq.com
+win.gdt.qq.com
+xs.gdt.qq.com
+v2.gdt.qq.com
+vr.gdt.qq.com
+xc.gdt.qq.com
+*.gdtimg.com
+*.gdt.qq.com
+
+# ====== Google AdMob / Ads ======
+doubleclick.net
+googlesyndication.com
+googleadservices.com
+adservice.google.com
+pagead2.googlesyndication.com
+googleads.g.doubleclick.net
+ad.doubleclick.net
+tpc.googlesyndication.com
+partner.googleadservices.com
+pubads.g.doubleclick.net
+securepubads.g.doubleclick.net
+mobileads.google.com
+media.admob.com
+lh3.googleusercontent.com/admin
+*.doubleclick.net
+*.googlesyndication.com
+*.googleadservices.com
+
+# ====== Unity Ads ======
+unityads.unity3d.com
+config.unityads.unity3d.com
+auction.unityads.unity3d.com
+webview.unityads.unity3d.com
+cdn.unityads.unity3d.com
+video-player.unityads.unity3d.com
+*.unityads.unity3d.com
+*.unity3d.com/unity-ads
+
+# ====== Vungle / Liftoff ======
+vungle.com
+api.vungle.com
+ingest.vungle.com
+ads.vungle.com
+cdn.vungle.com
+vungle.akadns.net
+*.vungle.com
+*.vungle.akadns.net
+
+# ====== AppLovin ======
+applovin.com
+d.applovin.com
+rt.applovin.com
+ms.applovin.com
+vid.applovin.com
+a.applovin.com
+img.applovin.com
+*.applovin.com
+
+# ====== Meta / Facebook Audience Network ======
+graph.facebook.com/audiencenetwork
+connect.facebook.net/*/audiencenetwork
+an.facebook.com
+fbcdn.net/an
+*.fbcdn.net
+
+# ====== 快手联盟 ======
+ksad.com
+api.ksad.com
+sdk.ksad.com
+log.ksad.com
+static.ksad.com
+img.ksad.com
+video.ksad.com
+*.ksad.com
+
+# ====== Mintegral / Mobvista ======
+mintegral.com
+mobvista.com
+cdn-adn.rayjump.com
+s-api.mobvista.com
+*.mintegral.com
+*.mobvista.com
+
+# ====== IronSource ======
+ironsrc.com
+init.supersonicads.com
+banners.supersonicads.com
+events.supersonicads.com
+is-tracking-pixel-prod.ironsrc.com
+*.ironsrc.com
+*.supersonicads.com
+
+# ====== AdColony ======
+adcolony.com
+ads30.adcolony.com
+androsdk.adcolony.com
+events3.adcolony.com
+*.adcolony.com
+
+# ====== Sigmob ======
+sigmob.com
+ad.sigmob.com
+api.sigmob.com
+cdn.sigmob.com
+log.sigmob.com
+*.sigmob.com
+
+# ====== Chartboost ======
+chartboost.com
+live.chartboost.com
+answers.chartboost.com
+adconfig.chartboost.com
+*.chartboost.com
+
+# ====== Tapjoy ======
+tapjoy.com
+content.tapjoy.com
+ws.tapjoyads.com
+rpc.tapjoy.com
+*.tapjoy.com
+
+# ====== InMobi ======
+inmobi.com
+w.inmobi.com
+sdkm.w.inmobi.com
+api.w.inmobi.com
+*.inmobi.com
+
+# ====== Fyber / Digital Turbine ======
+fyber.com
+inner-active.mobi
+cdn.inner-active.mobi
+*.fyber.com
+*.inner-active.mobi
+
+# ====== 通用广告追踪/分发 ======
+ad-brix.com
+adjust.com
+adnxs.com
+adsrvr.org
+advertising.com
+amazon-adsystem.com
+appboy.com
+appier.com
+appsflyer.com
+batch.com
+bluekai.com
+branch.io
+casalemedia.com
+criteo.com
+crwdcntrl.net
+demdex.net
+exelator.com
+flurry.com
+inmobi.com
+kochava.com
+localytics.com
+mopub.com
+ogury.com
+onebyaol.com
+openx.net
+pubmatic.com
+rubiconproject.com
+scorecardresearch.com
+singular.net
+smartadserver.com
+smaato.net
+sojern.com
+startapp.com
+taboola.com
+tradedesk.com
+tremorhub.com
+verve.com
+vzmtech.com
+yahoo.com/admax
+yandexadexchange.net
+zedo.com
+
+# ====== 国内广告平台 ======
+# 科大讯飞广告
+iflyad.bj.openstorage.cn
+*.iflyad.com
+
+# 有米
+youmi.net
+*.youmi.net
+
+# 点入
+dianru.com
+*.dianru.com
+
+# 艾德思奇
+adse.cn
+*.adse.cn
+
+# 多盟
+domob.cn
+*.domob.cn
+
+# 力美
+limei.com
+*.limei.com
+
+# 万普世纪
+waps.cn
+*.waps.cn
+
+# 趣米
+adquan.com
+*.adquan.com
+
+# 小鸟推送
+xiaoniao99.com
+*.xiaoniao99.com
+
+# Bytedance 备用域名
+bytedance.com/ad
+mon.snssdk.com
+log.snssdk.com
+*.snssdk.com
+
+# 百度广告
+mobads.baidu.com
+cpro.baidu.com
+dup.baidustatic.com
+mobads-logs.baidu.com
+*.mobads.baidu.com
+
+# ====== 全球通用广告/追踪域名 ======
+adservice.google.com
+adsafeprotected.com
+adsymptotic.com
+adzerk.net
+bat.bing.com
+bluekai.com
+c.amazon-adsystem.com
+cdn.moengage.com
+cdn.taboola.com
+crashlytics.com
+d2oh4tlt9mrke9.cloudfront.net
+d30o0f1c4sojza.cloudfront.net
+e-planning.net
+googletagmanager.com
+googletagservices.com
+i.liadm.com
+id5-sync.com
+krxd.net
+nexac.com
+outbrain.com
+pixel.rubiconproject.com
+postrelease.com
+pro-market.net
+quantcount.com
+rlcdn.com
+s0.2mdn.net
+s.amazon-adsystem.com
+s.zkcdn.net
+sb.scorecardresearch.com
+serving-sys.com
+sharethrough.com
+tiqcdn.com
+trc.taboola.com
+vidible.tv
+wzrkt.com
+yandex.ru/ads

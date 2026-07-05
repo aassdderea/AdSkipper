@@ -1,0 +1,9 @@
+Package: com.wanlai.adskipper
+Name: AdSkipper
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: 自动跳过广告注入插件 - 支持模拟点击、关闭广告页面、透明UI拦截
+Maintainer: wanlai
+Author: wanlai
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 11.0)
