@@ -80,6 +80,12 @@
 
 - (void)show {
     if (_visible) return;
+    
+    if (![WKWebView class]) {
+        [[LogBuffer sharedInstance] log:@"WebKit不可用，控制台无法启动" level:@"error" source:@"Console"];
+        return;
+    }
+    
     _visible = YES;
     self.hidden = NO;
     self.frame = [UIScreen mainScreen].bounds;

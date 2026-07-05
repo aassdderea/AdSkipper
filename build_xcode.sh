@@ -19,7 +19,7 @@ MIN_IOS="11.0"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework CFNetwork -framework WebKit"
+FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework CFNetwork -weak_framework WebKit"
 FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=$MIN_IOS -Isrc"
 
 echo "[AdSkipper] SDK: $(xcrun --sdk iphoneos --show-sdk-version)"

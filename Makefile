@@ -10,7 +10,8 @@ TWEAK_NAME = AdSkipper
 AdSkipper_FILES = Tweak.x $(wildcard src/*.m)
 AdSkipper_CFLAGS = -fobjc-arc -Isrc
 AdSkipper_LDFLAGS = -lz
-AdSkipper_FRAMEWORKS = UIKit Foundation CoreGraphics CFNetwork WebKit
+AdSkipper_FRAMEWORKS = UIKit Foundation CoreGraphics CFNetwork
+AdSkipper_LDFLAGS = -lz -weak_framework WebKit
 AdSkipper_PRIVATE_FRAMEWORKS = BackBoardServices
 
 include $(THEOS_MAKE_PATH)/tweak.mk

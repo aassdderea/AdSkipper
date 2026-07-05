@@ -3,49 +3,58 @@ name: Build AdSkipper
 on:
   push:
     branches: [main, master]
-    paths-ignore:
-      - 'README.md'
-      - 'LICENSE'
+    paths-ignore: ['README.md', 'LICENSE']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0'
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 安装 ldid 签名工具
+      - name: 安装 ldid
         run: |
           if ! command -v ldid &> /dev/null; then
-            brew install ldid 2>/dev/null || \
-            curl -L -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_macosx_x86_64 2>/dev/null && \
-            chmod +x /usr/local/bin/ldid 2>/dev/null || true
+            brew install ldid 2>/dev/null || true
+            if ! command -v ldid &> /dev/null; then
+              curl -L -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_macosx_x86_64 && \
+              chmod +x /usr/local/bin/ldid || true
+            fi
           fi
+          ldid 2>&1 | head -1 || echo "ldid ready"
 
       - name: 编译 AdSkipper.dylib
         run: |
           chmod +x build_xcode.sh
           bash build_xcode.sh
 
-      - name: 上传 dylib
+      - name: 编译 诊断用 hello.dylib
+        run: |
+          chmod +x build_test_hello.sh
+          bash build_test_hello.sh
+
+      - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: AdSkipper.dylib
-          path: build/AdSkipper.dylib
+          name: dylibs
+          path: |
+            build/AdSkipper.dylib
+            build/hello.dylib
           retention-days: 90
 
-      - name: 验证产物
+      - name: 验证
         run: |
           echo "=== AdSkipper.dylib ==="
           ls -la build/AdSkipper.dylib
           file build/AdSkipper.dylib
-          shasum -a 256 build/AdSkipper.dylib
+          otool -L build/AdSkipper.dylib | head -20
+          echo ""
+          echo "=== hello.dylib ==="
+          ls -la build/hello.dylib
+          file build/hello.dylib
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -53,16 +62,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - name: 下载 dylib
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: AdSkipper.dylib
-
-      - name: 创建 Release
-        uses: softprops/action-gh-release@v2
+          name: dylibs
+      - uses: softprops/action-gh-release@v2
         with:
           name: "AdSkipper ${{ github.ref_name }}"
-          files: AdSkipper.dylib
+          files: |
+            AdSkipper.dylib
+            hello.dylib
           generate_release_notes: true
