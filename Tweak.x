@@ -365,15 +365,15 @@ static void adskipper_init(void) {
 
 static void __attribute__((constructor)) adskipper_dylib_load(void) {
     NSLog(@"[AdSkipper] constructor fired");
+    NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    [@"CONSTRUCTOR_OK" writeToFile:[docs stringByAppendingPathComponent:@"adskipper.log"]
+                         atomically:YES encoding:NSUTF8StringEncoding error:nil];
     @autoreleasepool {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(), ^{
-            adskipper_init();
-        });
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
-            adskipper_retryToast(@"AdSkipper 已激活", 0, 0, @"摇晃手机打开控制台", 1);
+            adskipper_retryToast(@"AdSkipper已激活", 0, 0, @"摇晃手机打开控制台", 1);
         });
+        // adskipper_init() 暂时禁用 — 诊断模式
     }
 }
 
