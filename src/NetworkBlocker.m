@@ -12,6 +12,7 @@
 #import <mach-o/dyld.h>
 #import <mach-o/getsect.h>
 #import <mach-o/nlist.h>
+#import <mach/mach.h>
 #import <string.h>
 #import <unistd.h>
 
