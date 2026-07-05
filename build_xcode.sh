@@ -1,12 +1,12 @@
 #!/bin/bash
-# AdSkipper 编译脚本 (Xcode CLI / GitHub Actions)
+# AdSkipper 编译脚本
 # 用法: bash build_xcode.sh [output_dir]
 
 set -e
 
 SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "")
 if [ -z "$SDK_PATH" ]; then
-    echo "[错误] 未找到 iPhoneOS SDK，请确保 Xcode 已安装"
+    echo "[错误] 未找到 iPhoneOS SDK"
     exit 1
 fi
 
@@ -22,13 +22,13 @@ mkdir -p "$BUILD_DIR"
 FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework CFNetwork -framework WebKit"
 FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=$MIN_IOS -Isrc"
 
-echo "[AdSkipper] 开始编译..."
-echo "  SDK: $SDK_PATH"
-echo "  架构: $ARCHS"
-echo "  最低iOS: $MIN_IOS"
+echo "[AdSkipper] SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
+echo "[AdSkipper] 架构: $ARCHS"
+
+THIN_DIRS=""
 
 for arch in $ARCHS; do
-    echo "  [编译] $arch"
+    echo "  [编译 $arch]"
     OBJ_DIR="$BUILD_DIR/$arch"
     mkdir -p "$OBJ_DIR"
 
@@ -38,28 +38,26 @@ for arch in $ARCHS; do
     done
 
     xcrun -sdk iphoneos clang $FLAGS -arch $arch -c "$SCRIPT_DIR/Tweak.x" -o "$OBJ_DIR/Tweak.x.o" -x objective-c
+
+    THIN="$BUILD_DIR/AdSkipper_$arch.dylib"
+    xcrun -sdk iphoneos clang $FLAGS -arch $arch -dynamiclib \
+        -install_name @rpath/AdSkipper.dylib \
+        $FRAMEWORKS \
+        -o "$THIN" \
+        $OBJ_DIR/*.o
+    
+    THIN_DIRS="$THIN_DIRS $THIN"
 done
 
-echo "  [链接] 创建 dylib..."
-OBJ_FILES="$BUILD_DIR/arm64/*.o"
-xcrun -sdk iphoneos clang $FLAGS -dynamiclib \
-    -install_name @executable_path/AdSkipper.dylib \
-    $FRAMEWORKS \
-    -o "$BUILD_DIR/AdSkipper.dylib" \
-    $OBJ_FILES
+echo "  [合并] lipo"
+lipo -create $THIN_DIRS -output "$BUILD_DIR/AdSkipper.dylib"
+rm -f $THIN_DIRS
 
-if [ -f "$BUILD_DIR/AdSkipper.dylib" ]; then
-    ldid -S"$SCRIPT_DIR/entitlements.plist" "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || true
-    
-    DYLIB_SIZE=$(stat -f%z "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || stat -c%s "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || echo "unknown")
-    echo ""
-    echo "  [完成] AdSkipper.dylib ($DYLIB_SIZE bytes)"
-    echo "  位置: $BUILD_DIR/AdSkipper.dylib"
-    echo ""
-    echo "  配套文件 (放到/Library/Application Support/AdSkipper/):"
-    echo "    - rules/default_rules.json"
-    echo "    - rules/domain_blacklist.txt"
-else
-    echo "[错误] 编译失败"
-    exit 1
-fi
+echo "  [签名]"
+ldid -S "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || echo "  (签名跳过，TrollStore环境可能不需要)"
+
+SIZE=$(stat -f%z "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || stat -c%s "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null)
+echo ""
+echo "  [完成] AdSkipper.dylib ($SIZE bytes)"
+echo "  架构: $(lipo -info "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || file "$BUILD_DIR/AdSkipper.dylib")"
+echo "  install_name: $(otool -D "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || echo 'N/A')"
