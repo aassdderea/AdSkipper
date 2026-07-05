@@ -315,49 +315,66 @@ static void adskipper_retryToast(NSString *message, NSInteger ruleCount, NSInteg
     dispatch_async(dispatch_get_main_queue(), tryShow);
 }
 
+static void adskipper_safe_init(void) {
+    NSLog(@"[AdSkipper:1] hooks...");
+    @try { adskipper_installAllHooks(); }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] hook error: %@", e); }
+    
+    NSLog(@"[AdSkipper:2] rules...");
+    RuleEngine *engine = [RuleEngine sharedInstance];
+    @try { [engine loadRulesFromFile:nil]; [engine startHotReloadWithInterval:10.0]; }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] rules error: %@", e); }
+    
+    NSLog(@"[AdSkipper:3] sdk...");
+    @try { adskipper_hookAdSDKClasses(); }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] sdk error: %@", e); }
+    
+    NSLog(@"[AdSkipper:4] network...");
+    NetworkBlocker *nb = [NetworkBlocker sharedInstance];
+    @try { [nb installDNSHook]; [nb installURLSessionHook]; }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] network error: %@", e); }
+    
+    NSLog(@"[AdSkipper:5] domains...");
+    @try {
+        NSString *domainPath = @"/Library/Application Support/AdSkipper/domain_blacklist.txt";
+        [nb loadDomainBlacklistFromFile:domainPath];
+    }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] domain error: %@", e); }
+    
+    NSLog(@"[AdSkipper:6] scanner...");
+    @try { [[AdDetector sharedInstance] startScanning]; }
+    @catch (NSException *e) { NSLog(@"[AdSkipper] scan error: %@", e); }
+    
+    NSLog(@"[AdSkipper:done] %lu rules %lu domains",
+          (unsigned long)[engine allRules].count,
+          (unsigned long)[nb allBlockedDomains].count);
+}
+
 static void adskipper_init(void) {
     if (_adSkipperInitialized) return;
     _adSkipperInitialized = YES;
-    _blockedClassStats = [NSMutableDictionary dictionary];
     
     NSString *bundleId = [[NSBundle mainBundle] bundleIdentifier] ?: @"unknown";
-    NSLog(@"[AdSkipper] ========================================");
-    NSLog(@"[AdSkipper] 广告跳过插件 v1.0 初始化");
-    NSLog(@"[AdSkipper] App: %@ | iOS: %@", bundleId, [[UIDevice currentDevice] systemVersion]);
+    NSLog(@"[AdSkipper] loaded into %@ iOS %@", bundleId, [[UIDevice currentDevice] systemVersion]);
     
-    adskipper_installAllHooks();
-    
-    RuleEngine *engine = [RuleEngine sharedInstance];
-    [engine loadRulesFromFile:nil];
-    [engine startHotReloadWithInterval:10.0];
-    
-    adskipper_hookAdSDKClasses();
-    
-    NetworkBlocker *nb = [NetworkBlocker sharedInstance];
-    [nb installDNSHook];
-    [nb installURLSessionHook];
-    
-    NSString *domainPath = @"/Library/Application Support/AdSkipper/domain_blacklist.txt";
-    if (![[NSFileManager defaultManager] fileExistsAtPath:domainPath]) {
-        domainPath = [[NSBundle mainBundle] pathForResource:@"domain_blacklist" ofType:@"txt"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        adskipper_safe_init();
+    });
+}
+
+static void __attribute__((constructor)) adskipper_dylib_load(void) {
+    NSLog(@"[AdSkipper] constructor fired");
+    @autoreleasepool {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            adskipper_init();
+        });
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            adskipper_retryToast(@"AdSkipper 已激活", 0, 0, @"摇晃手机打开控制台", 1);
+        });
     }
-    if (![[NSFileManager defaultManager] fileExistsAtPath:domainPath]) {
-        NSString *rulesDir = [[engine rulesFilePath] stringByDeletingLastPathComponent];
-        domainPath = [rulesDir stringByAppendingPathComponent:@"domain_blacklist.txt"];
-    }
-    [nb loadDomainBlacklistFromFile:domainPath];
-    
-    [[AdDetector sharedInstance] startScanning];
-    
-    NSLog(@"[AdSkipper] 已加载 %lu 条UI规则 | %lu 个拦截域名",
-          (unsigned long)[engine allRules].count,
-          (unsigned long)[nb allBlockedDomains].count);
-    NSLog(@"[AdSkipper] 拦截层: DNS | HTTP | UI 三层防护");
-    NSLog(@"[AdSkipper] 初始化完成！========================================");
-    
-    NSUInteger ruleCount = [engine allRules].count;
-    NSUInteger domainCount = [nb allBlockedDomains].count;
-    adskipper_retryToast(@"AdSkipper 已激活", (NSInteger)ruleCount, (NSInteger)domainCount, @"摇晃手机打开控制台", 1);
 }
 
 static void __attribute__((constructor)) adskipper_dylib_load(void) {
