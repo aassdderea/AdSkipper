@@ -1,5 +1,6 @@
 #import "NetworkBlocker.h"
 #import "RuleEngine.h"
+#import "LogBuffer.h"
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
@@ -173,8 +174,10 @@ static int hooked_getaddrinfo(const char *hostname, const char *servname,
         if ([[NetworkBlocker sharedInstance] isDomainBlocked:hostStr]) {
             NetworkBlocker *nb = [NetworkBlocker sharedInstance];
             nb->_dnsBlockedCount++;
+            [[LogBuffer sharedInstance] incrementDns];
             
             if (nb->_dnsBlockedCount % 50 == 1) {
+                [[LogBuffer sharedInstance] block:@"DNS拦截: %@ (累计:%lu)", hostStr, (unsigned long)nb->_dnsBlockedCount];
                 NSLog(@"%@ DNS拦截: %@ (累计: %lu)", kNBLogPrefix, hostStr, (unsigned long)nb->_dnsBlockedCount);
             }
             
@@ -246,7 +249,10 @@ static id hooked_dataTaskWithRequest(id self, SEL _cmd, NSURLRequest *request, i
     if (request.URL && [[NetworkBlocker sharedInstance] isURLBlocked:request.URL]) {
         NetworkBlocker *nb = [NetworkBlocker sharedInstance];
         nb->_httpBlockedCount++;
-        NSLog(@"%@ HTTP拦截: %@ (累计: %lu)", kNBLogPrefix, request.URL.host, (unsigned long)nb->_httpBlockedCount);
+        [[LogBuffer sharedInstance] incrementHttp];
+        if (nb->_httpBlockedCount % 20 == 1) {
+            [[LogBuffer sharedInstance] block:@"HTTP拦截: %@ (累计:%lu)", request.URL.host, (unsigned long)nb->_httpBlockedCount];
+        }
         
         if ([self respondsToSelector:@selector(dataTaskWithURL:completionHandler:)]) {
             NSURL *fakeURL = [NSURL URLWithString:@"about:blank"];
@@ -284,8 +290,9 @@ static id hooked_dataTaskWithRequest(id self, SEL _cmd, NSURLRequest *request, i
             if (request.URL && [[NetworkBlocker sharedInstance] isURLBlocked:request.URL]) {
                 NetworkBlocker *nb = [NetworkBlocker sharedInstance];
                 nb->_httpBlockedCount++;
+                [[LogBuffer sharedInstance] incrementHttp];
                 if (nb->_httpBlockedCount % 20 == 1) {
-                    NSLog(@"%@ HTTP拦截: %@ (累计: %lu)", kNBLogPrefix, request.URL.host, (unsigned long)nb->_httpBlockedCount);
+                    [[LogBuffer sharedInstance] block:@"HTTP拦截: %@ (累计:%lu)", request.URL.host, (unsigned long)nb->_httpBlockedCount];
                 }
                 
                 NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:@{

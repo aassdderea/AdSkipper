@@ -5,6 +5,8 @@
 #import "AdDetector.h"
 #import "TouchSimulator.h"
 #import "NetworkBlocker.h"
+#import "LogBuffer.h"
+#import "WebServer.h"
 
 static BOOL _adSkipperInitialized = NO;
 static BOOL _globalAdBlockEnabled = YES;
@@ -197,6 +199,79 @@ static void adskipper_hookAdSDKClasses(void) {
     }
 }
 
+static void adskipper_showToast(NSString *message, NSInteger ruleCount, NSInteger domainCount, NSString *webURL) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = nil;
+        if (@available(iOS 13.0, *)) {
+            for (UIScene *scene in [[UIApplication sharedApplication] connectedScenes]) {
+                if ([scene isKindOfClass:[UIWindowScene class]]) {
+                    for (UIWindow *w in [(UIWindowScene *)scene windows]) {
+                        if (w.isKeyWindow) { keyWindow = w; break; }
+                    }
+                }
+                if (keyWindow) break;
+            }
+        }
+        if (!keyWindow) keyWindow = [[UIApplication sharedApplication] keyWindow];
+        if (!keyWindow) return;
+        
+        CGFloat sw = keyWindow.bounds.size.width;
+        CGFloat h = webURL ? 72 : 52;
+        
+        UIView *toast = [[UIView alloc] initWithFrame:CGRectMake(16, 80, sw - 32, h)];
+        toast.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.88];
+        toast.layer.cornerRadius = 14;
+        toast.clipsToBounds = YES;
+        toast.alpha = 0;
+        toast.transform = CGAffineTransformMakeTranslation(0, -20);
+        
+        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(12, 8, toast.bounds.size.width - 24, 18)];
+        label.text = message;
+        label.textColor = [UIColor whiteColor];
+        label.font = [UIFont boldSystemFontOfSize:13];
+        label.textAlignment = NSTextAlignmentCenter;
+        [toast addSubview:label];
+        
+        if (webURL) {
+            UILabel *detail = [[UILabel alloc] initWithFrame:CGRectMake(12, 26, toast.bounds.size.width - 24, 18)];
+            detail.text = [NSString stringWithFormat:@"%ld 规则  %ld 域名", (long)ruleCount, (long)domainCount];
+            detail.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.6];
+            detail.font = [UIFont systemFontOfSize:11];
+            detail.textAlignment = NSTextAlignmentCenter;
+            [toast addSubview:detail];
+            
+            UILabel *urlLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 46, toast.bounds.size.width - 24, 18)];
+            urlLabel.text = [NSString stringWithFormat:@"控制台 %@", webURL];
+            urlLabel.textColor = [UIColor colorWithRed:0.49 green:1.0 blue:0.42 alpha:0.9];
+            urlLabel.font = [UIFont systemFontOfSize:10];
+            urlLabel.textAlignment = NSTextAlignmentCenter;
+            [toast addSubview:urlLabel];
+        } else {
+            UILabel *detail = [[UILabel alloc] initWithFrame:CGRectMake(12, 28, toast.bounds.size.width - 24, 18)];
+            detail.text = [NSString stringWithFormat:@"%ld 规则  %ld 域名", (long)ruleCount, (long)domainCount];
+            detail.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.6];
+            detail.font = [UIFont systemFontOfSize:11];
+            detail.textAlignment = NSTextAlignmentCenter;
+            [toast addSubview:detail];
+        }
+        
+        [keyWindow addSubview:toast];
+        
+        [UIView animateWithDuration:0.3 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
+            toast.alpha = 1;
+            toast.transform = CGAffineTransformIdentity;
+        } completion:^(BOOL finished) {
+            [UIView animateWithDuration:0.4 delay:3.0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+                toast.alpha = 0;
+                toast.transform = CGAffineTransformMakeTranslation(0, -20);
+            } completion:^(BOOL finished) {
+                [toast removeFromSuperview];
+            }];
+        }];
+    });
+}
+
 static void adskipper_init(void) {
     if (_adSkipperInitialized) return;
     _adSkipperInitialized = YES;
@@ -236,6 +311,13 @@ static void adskipper_init(void) {
           (unsigned long)[nb allBlockedDomains].count);
     NSLog(@"[AdSkipper] 拦截层: DNS | HTTP | UI 三层防护");
     NSLog(@"[AdSkipper] 初始化完成！========================================");
+    
+    WebServer *ws = [WebServer sharedInstance];
+    [ws startOnPort:9527];
+    
+    NSUInteger ruleCount = [engine allRules].count;
+    NSUInteger domainCount = [nb allBlockedDomains].count;
+    adskipper_showToast(@"AdSkipper 已激活", (NSInteger)ruleCount, (NSInteger)domainCount, [ws accessURL]);
 }
 
 static void __attribute__((constructor)) adskipper_dylib_load(void) {

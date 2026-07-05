@@ -56,25 +56,22 @@ AdSkipper/
 
 ### GitHub Actions (推荐)
 
-Fork 本项目 → Actions → 下载 Artifact → `AdSkipper.dylib` 注入即可。
-
-### 本地编译
-
-```bash
-# macOS + Xcode
-bash build_xcode.sh
-
-# 或在 theos 环境下
-export THEOS=/opt/theos
-make package
-```
+1. Fork 本项目
+2. Actions → 触发一次编译（或推送代码自动触发）
+3. 下载 Artifact → 得到 `AdSkipper.dylib`
+4. **同时手动下载这两个文件**（仓库 `rules/` 目录下）：
+   - `default_rules.json`
+   - `domain_blacklist.txt`
 
 ### TrollFools 注入
 
-1. `AdSkipper.dylib` 传到 iPhone
-2. **TrollFools** → `+` → 选 dylib → 选目标 App
-3. 同时把 `rules/default_rules.json` 和 `domain_blacklist.txt` 放到 `/Library/Application Support/AdSkipper/`
-4. 打开 App 即可生效
+1. 将三个文件传到 iPhone：
+   - `AdSkipper.dylib`
+   - `default_rules.json`
+   - `domain_blacklist.txt`
+2. 规则文件放到 `/Library/Application Support/AdSkipper/`（用 Filza 创建目录）
+3. **TrollFools** → `+` → 选择 `AdSkipper.dylib` → 选择目标 App
+4. 打开 App → 看到顶部黑色 Toast "AdSkipper 已激活" 即表示生效
 
 ## 覆盖的广告 SDK
 

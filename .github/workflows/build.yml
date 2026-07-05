@@ -9,18 +9,13 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      release:
-        description: '创建 Release'
-        type: boolean
-        default: false
   schedule:
     - cron: '0 0 * * 0'
 
 jobs:
   build:
     runs-on: macos-latest
-    
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -32,73 +27,42 @@ jobs:
             curl -L -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_macosx_x86_64 2>/dev/null && \
             chmod +x /usr/local/bin/ldid 2>/dev/null || true
           fi
-          ldid --version 2>/dev/null || echo "ldid installed at: $(which ldid 2>/dev/null || echo 'manual build')"
-
-      - name: 显示 Xcode 版本
-        run: |
-          xcodebuild -version
-          xcrun --sdk iphoneos --show-sdk-path
-          xcrun --sdk iphoneos --show-sdk-version
 
       - name: 编译 AdSkipper.dylib
         run: |
           chmod +x build_xcode.sh
           bash build_xcode.sh
 
-      - name: 准备发布文件
-        run: |
-          mkdir -p release/AdSkipper/Library/Application\ Support/AdSkipper
-          cp build/AdSkipper.dylib release/
-          cp rules/default_rules.json release/AdSkipper/Library/Application\ Support/AdSkipper/rules.json
-          cp rules/domain_blacklist.txt release/AdSkipper/Library/Application\ Support/AdSkipper/domain_blacklist.txt
-          cp README.md release/
-          
-          cd release
-          zip -r AdSkipper.zip AdSkipper.dylib AdSkipper/ README.md
-
-      - name: 上传构建产物
+      - name: 上传 dylib
         uses: actions/upload-artifact@v4
         with:
-          name: AdSkipper
-          path: |
-            build/AdSkipper.dylib
-            release/AdSkipper.zip
-            rules/default_rules.json
-            rules/domain_blacklist.txt
+          name: AdSkipper.dylib
+          path: build/AdSkipper.dylib
           retention-days: 90
 
       - name: 验证产物
         run: |
-          echo "=== 编译完成 ==="
+          echo "=== AdSkipper.dylib ==="
           ls -la build/AdSkipper.dylib
           file build/AdSkipper.dylib
-          echo ""
-          echo "=== 包含文件 ==="
-          ls -la release/
-          echo ""
-          echo "SHA256:"
           shasum -a 256 build/AdSkipper.dylib
 
   release:
-    if: github.event.inputs.release == 'true' || startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
+
     steps:
-      - name: 下载构建产物
+      - name: 下载 dylib
         uses: actions/download-artifact@v4
         with:
-          name: AdSkipper
+          name: AdSkipper.dylib
 
       - name: 创建 Release
         uses: softprops/action-gh-release@v2
         with:
           name: "AdSkipper ${{ github.ref_name }}"
-          files: |
-            AdSkipper.dylib
-            AdSkipper.zip
+          files: AdSkipper.dylib
           generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
