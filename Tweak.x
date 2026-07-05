@@ -79,6 +79,10 @@ static void adskipper_hook_viewDidAppear(id self, SEL _cmd, BOOL animated) {
     }
     if (!_adSkipperInitialized) return;
     
+    if (!_toastShown) {
+        adskipper_showToastNow(@"AdSkipper 已激活", 0, 0, @"摇晃手机打开控制台");
+    }
+    
     NSString *vcClassName = NSStringFromClass([self class]);
     if ([[RuleEngine sharedInstance] shouldBlockClass:vcClassName]) {
         _totalAdsBlocked++;
@@ -228,77 +232,87 @@ static void adskipper_hookAdSDKClasses(void) {
     }
 }
 
-static void adskipper_showToast(NSString *message, NSInteger ruleCount, NSInteger domainCount, NSString *hint) {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = nil;
-        if (@available(iOS 13.0, *)) {
-            for (UIScene *scene in [[UIApplication sharedApplication] connectedScenes]) {
-                if ([scene isKindOfClass:[UIWindowScene class]]) {
-                    for (UIWindow *w in [(UIWindowScene *)scene windows]) {
-                        if (w.isKeyWindow) { keyWindow = w; break; }
-                    }
+static BOOL _toastShown = NO;
+
+static UIWindow *adskipper_getKeyWindow(void) {
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [[UIApplication sharedApplication] connectedScenes]) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                for (UIWindow *w in [(UIWindowScene *)scene windows]) {
+                    if (!w.hidden && w.alpha > 0 && w.bounds.size.width > 0) return w;
                 }
-                if (keyWindow) break;
             }
         }
-        if (!keyWindow) keyWindow = [[UIApplication sharedApplication] keyWindow];
-        if (!keyWindow) keyWindow = [[UIApplication sharedApplication] windows].firstObject;
-        if (!keyWindow) return;
-        
-        CGFloat sw = keyWindow.bounds.size.width;
-        
-        UIView *toast = [[UIView alloc] initWithFrame:CGRectMake(16, 80, sw - 32, 72)];
-        toast.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.88];
-        toast.layer.cornerRadius = 14;
-        toast.clipsToBounds = YES;
-        toast.alpha = 0;
-        toast.transform = CGAffineTransformMakeTranslation(0, -20);
-        
-        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(12, 8, toast.bounds.size.width - 24, 18)];
-        label.text = message;
-        label.textColor = [UIColor whiteColor];
-        label.font = [UIFont boldSystemFontOfSize:13];
-        label.textAlignment = NSTextAlignmentCenter;
-        [toast addSubview:label];
-        
-        UILabel *detail = [[UILabel alloc] initWithFrame:CGRectMake(12, 28, toast.bounds.size.width - 24, 16)];
-        detail.text = [NSString stringWithFormat:@"%ld 规则  %ld 域名", (long)ruleCount, (long)domainCount];
-        detail.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.55];
-        detail.font = [UIFont systemFontOfSize:11];
-        detail.textAlignment = NSTextAlignmentCenter;
-        [toast addSubview:detail];
-        
-        UILabel *hintLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 48, toast.bounds.size.width - 24, 16)];
-        hintLabel.text = hint;
-        hintLabel.textColor = [UIColor colorWithRed:0.49 green:1.0 blue:0.42 alpha:0.9];
-        hintLabel.font = [UIFont systemFontOfSize:10];
-        hintLabel.textAlignment = NSTextAlignmentCenter;
-        [toast addSubview:hintLabel];
-        
-        [keyWindow addSubview:toast];
-        
-        [UIView animateWithDuration:0.35 delay:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            toast.alpha = 1;
-            toast.transform = CGAffineTransformIdentity;
-        } completion:^(BOOL finished) {
-            [UIView animateWithDuration:0.4 delay:4.0 options:UIViewAnimationOptionCurveEaseIn animations:^{
-                toast.alpha = 0;
-                toast.transform = CGAffineTransformMakeTranslation(0, -20);
-            } completion:^(BOOL finished) {
-                [toast removeFromSuperview];
-            }];
-        }];
-    });
+    }
+    for (UIWindow *w in [[UIApplication sharedApplication] windows]) {
+        if (!w.hidden && w.alpha > 0 && w.bounds.size.width > 0) return w;
+    }
+    return nil;
+}
+
+static void adskipper_showToastNow(NSString *message, NSInteger ruleCount, NSInteger domainCount, NSString *hint) {
+    if (_toastShown) return;
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(6.0 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        static BOOL toastShownAgain = NO;
-        if (!toastShownAgain) {
-            toastShownAgain = YES;
-            adskipper_showToast(message, ruleCount, domainCount, hint);
+    UIWindow *keyWindow = adskipper_getKeyWindow();
+    if (!keyWindow) return;
+    
+    _toastShown = YES;
+    
+    CGFloat sw = keyWindow.bounds.size.width;
+    UIView *toast = [[UIView alloc] initWithFrame:CGRectMake(16, 80, sw - 32, 72)];
+    toast.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.88];
+    toast.layer.cornerRadius = 14;
+    toast.clipsToBounds = YES;
+    toast.alpha = 0;
+    toast.tag = 0xAD51;
+    
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(12, 8, toast.bounds.size.width - 24, 18)];
+    label.text = message;
+    label.textColor = [UIColor whiteColor];
+    label.font = [UIFont boldSystemFontOfSize:13];
+    label.textAlignment = NSTextAlignmentCenter;
+    [toast addSubview:label];
+    
+    UILabel *detail = [[UILabel alloc] initWithFrame:CGRectMake(12, 28, toast.bounds.size.width - 24, 16)];
+    detail.text = [NSString stringWithFormat:@"%ld 规则  %ld 域名", (long)ruleCount, (long)domainCount];
+    detail.textColor = [[UIColor whiteColor] colorWithAlphaComponent:0.55];
+    detail.font = [UIFont systemFontOfSize:11];
+    detail.textAlignment = NSTextAlignmentCenter;
+    [toast addSubview:detail];
+    
+    UILabel *hintLabel = [[UILabel alloc] initWithFrame:CGRectMake(12, 48, toast.bounds.size.width - 24, 16)];
+    hintLabel.text = hint;
+    hintLabel.textColor = [UIColor colorWithRed:0.49 green:1.0 blue:0.42 alpha:0.9];
+    hintLabel.font = [UIFont systemFontOfSize:10];
+    hintLabel.textAlignment = NSTextAlignmentCenter;
+    [toast addSubview:hintLabel];
+    
+    [keyWindow addSubview:toast];
+    
+    [UIView animateWithDuration:0.3 animations:^{ toast.alpha = 1; }
+                     completion:^(BOOL f) {
+        [UIView animateWithDuration:0.4 delay:4.0 options:0 animations:^{ toast.alpha = 0; }
+                         completion:^(BOOL f) { [toast removeFromSuperview]; }];
+    }];
+}
+
+static void adskipper_retryToast(NSString *message, NSInteger ruleCount, NSInteger domainCount, NSString *hint, int attempt) {
+    if (_toastShown || attempt > 10) return;
+    
+    __weak void(^weakRetry)(int) = nil;
+    
+    void(^tryShow)(void) = ^{
+        if (_toastShown) return;
+        adskipper_showToastNow(message, ruleCount, domainCount, hint);
+        if (!_toastShown) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(attempt * 0.8 * NSEC_PER_SEC)),
+                          dispatch_get_main_queue(), ^{
+                adskipper_retryToast(message, ruleCount, domainCount, hint, attempt + 1);
+            });
         }
-    });
+    };
+    
+    dispatch_async(dispatch_get_main_queue(), tryShow);
 }
 
 static void adskipper_init(void) {
@@ -343,12 +357,13 @@ static void adskipper_init(void) {
     
     NSUInteger ruleCount = [engine allRules].count;
     NSUInteger domainCount = [nb allBlockedDomains].count;
-    adskipper_showToast(@"AdSkipper 已激活", (NSInteger)ruleCount, (NSInteger)domainCount, @"摇晃手机打开控制台");
+    adskipper_retryToast(@"AdSkipper 已激活", (NSInteger)ruleCount, (NSInteger)domainCount, @"摇晃手机打开控制台", 1);
 }
 
 static void __attribute__((constructor)) adskipper_dylib_load(void) {
+    NSLog(@"[AdSkipper] dylib loaded into process");
     @autoreleasepool {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             adskipper_init();
         });
