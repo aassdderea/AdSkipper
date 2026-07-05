@@ -182,7 +182,7 @@ static NSString *const kRuleEngineLogPrefix = @"[AdSkipper::RuleEngine]";
 }
 
 - (void)reloadRules {
-    [self loadRulesFromFile:nil];
+    [self loadRulesFromFile:_rulesPath];
 }
 
 - (void)startHotReloadWithInterval:(NSTimeInterval)interval {

@@ -154,7 +154,10 @@ static NSString *const kTouchSimLogPrefix = @"[AdSkipper::Touch]";
     UIEvent *event = [[UIEventClass alloc] init];
     SEL eventTouchesSelector = NSSelectorFromString(@"_initWithEvent:timestamp:");
     if ([event respondsToSelector:eventTouchesSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [event performSelector:eventTouchesSelector withObject:nil withObject:nil];
+#pragma clang diagnostic pop
     }
     
     [touch setValue:@(UITouchPhaseBegan) forKey:@"phase"];
@@ -173,7 +176,10 @@ static NSString *const kTouchSimLogPrefix = @"[AdSkipper::Touch]";
     
     SEL activateSelector = NSSelectorFromString(@"accessibilityActivate");
     if ([view respondsToSelector:activateSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [view performSelector:activateSelector];
+#pragma clang diagnostic pop
     }
 }
 
@@ -210,15 +216,12 @@ static NSString *const kTouchSimLogPrefix = @"[AdSkipper::Touch]";
 - (void)sendSystemEventForView:(UIView *)view {
     if (!view) return;
     
-    SEL hitTestSelector = NSSelectorFromString(@"hitTest:withEvent:");
     CGPoint center = CGPointMake(CGRectGetMidX(view.bounds), CGRectGetMidY(view.bounds));
     UIView *hitView = [view hitTest:center withEvent:nil];
     
     if (hitView && [hitView isKindOfClass:[UIControl class]]) {
         UIControl *control = (UIControl *)hitView;
-        [control sendAction:control.actionsForTarget ? nil : @selector(touchesBegan:withEvent:)
-                          to:control.allTargets.anyObject
-                    forEvent:nil];
+        [control sendActionsForControlEvents:UIControlEventTouchUpInside];
     }
 }
 
