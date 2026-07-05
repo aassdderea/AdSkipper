@@ -17,8 +17,8 @@ mkdir -p "$BUILD_DIR"
 # NetworkBlocker → mach_vm_protect符号
 # 先只保留 Tweak.x + RuleEngine + AdDetector + LogBuffer
 
-SAFE_MODULES="RuleEngine AdDetector LogBuffer"
-FRAMEWORKS="-framework UIKit -framework Foundation -weak_framework WebKit"
+SAFE_MODULES="RuleEngine AdDetector LogBuffer TouchSimulator"
+FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -weak_framework WebKit"
 FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=11.0 -Isrc"
 
 echo "[Diag] safe modules: $SAFE_MODULES"
