@@ -11,7 +11,7 @@ SRC_DIR="$SCRIPT_DIR/src"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-FRAMEWORKS="-framework UIKit -framework Foundation -weak_framework WebKit"
+FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -weak_framework WebKit"
 FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=11.0 -Isrc"
 
 echo "[AdSkipper] 编译 arm64..."
