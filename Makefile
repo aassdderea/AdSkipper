@@ -10,7 +10,7 @@ TWEAK_NAME = AdSkipper
 AdSkipper_FILES = Tweak.x $(wildcard src/*.m)
 AdSkipper_CFLAGS = -fobjc-arc -Isrc
 AdSkipper_LDFLAGS = -lz
-AdSkipper_FRAMEWORKS = UIKit Foundation CoreGraphics CFNetwork
+AdSkipper_FRAMEWORKS = UIKit Foundation
 AdSkipper_LDFLAGS = -lz -weak_framework WebKit
 AdSkipper_PRIVATE_FRAMEWORKS = BackBoardServices
 

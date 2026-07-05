@@ -1,63 +1,37 @@
 #!/bin/bash
-# AdSkipper 编译脚本
-# 用法: bash build_xcode.sh [output_dir]
-
 set -e
 
 SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo "")
-if [ -z "$SDK_PATH" ]; then
-    echo "[错误] 未找到 iPhoneOS SDK"
-    exit 1
-fi
+[ -z "$SDK_PATH" ] && echo "[错误] 未找到 iPhoneOS SDK" && exit 1
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="${1:-$SCRIPT_DIR/build}"
 SRC_DIR="$SCRIPT_DIR/src"
-ARCHS="arm64 arm64e"
-MIN_IOS="11.0"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-FRAMEWORKS="-framework UIKit -framework Foundation -framework CoreGraphics -framework CFNetwork -weak_framework WebKit"
-FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=$MIN_IOS -Isrc"
+FRAMEWORKS="-framework UIKit -framework Foundation -weak_framework WebKit"
+FLAGS="-fobjc-arc -O2 -isysroot $SDK_PATH -mios-version-min=11.0 -Isrc"
 
-echo "[AdSkipper] SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
-echo "[AdSkipper] 架构: $ARCHS"
+echo "[AdSkipper] 编译 arm64..."
 
-THIN_DIRS=""
+OBJ_DIR="$BUILD_DIR/obj"
+mkdir -p "$OBJ_DIR"
 
-for arch in $ARCHS; do
-    echo "  [编译 $arch]"
-    OBJ_DIR="$BUILD_DIR/$arch"
-    mkdir -p "$OBJ_DIR"
-
-    for src in "$SRC_DIR"/*.m; do
-        name=$(basename "$src" .m)
-        xcrun -sdk iphoneos clang $FLAGS -arch $arch -c "$src" -o "$OBJ_DIR/$name.o"
-    done
-
-    xcrun -sdk iphoneos clang $FLAGS -arch $arch -c "$SCRIPT_DIR/Tweak.x" -o "$OBJ_DIR/Tweak.x.o" -x objective-c
-
-    THIN="$BUILD_DIR/AdSkipper_$arch.dylib"
-    xcrun -sdk iphoneos clang $FLAGS -arch $arch -dynamiclib \
-        -install_name @rpath/AdSkipper.dylib \
-        $FRAMEWORKS \
-        -o "$THIN" \
-        $OBJ_DIR/*.o
-    
-    THIN_DIRS="$THIN_DIRS $THIN"
+for src in "$SRC_DIR"/*.m; do
+    xcrun -sdk iphoneos clang $FLAGS -arch arm64 -c "$src" -o "$OBJ_DIR/$(basename "$src" .m).o"
 done
 
-echo "  [合并] lipo"
-lipo -create $THIN_DIRS -output "$BUILD_DIR/AdSkipper.dylib"
-rm -f $THIN_DIRS
+xcrun -sdk iphoneos clang $FLAGS -arch arm64 -c "$SCRIPT_DIR/Tweak.x" -o "$OBJ_DIR/Tweak.x.o" -x objective-c
 
-echo "  [签名]"
-ldid -S "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || echo "  (签名跳过，TrollStore环境可能不需要)"
+xcrun -sdk iphoneos clang $FLAGS -arch arm64 -dynamiclib \
+    -install_name @rpath/AdSkipper.dylib \
+    $FRAMEWORKS \
+    -o "$BUILD_DIR/AdSkipper.dylib" \
+    $OBJ_DIR/*.o
 
-SIZE=$(stat -f%z "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || stat -c%s "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null)
-echo ""
-echo "  [完成] AdSkipper.dylib ($SIZE bytes)"
-echo "  架构: $(lipo -info "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || file "$BUILD_DIR/AdSkipper.dylib")"
-echo "  install_name: $(otool -D "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || echo 'N/A')"
+ldid -S "$BUILD_DIR/AdSkipper.dylib" 2>/dev/null || true
+
+echo "  [完成] $(ls -lh "$BUILD_DIR/AdSkipper.dylib" | awk '{print $5}')"
+file "$BUILD_DIR/AdSkipper.dylib"
